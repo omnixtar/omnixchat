@@ -76,6 +76,8 @@ import com.biglybt.ui.UIFunctions;
 import com.biglybt.ui.UIFunctionsManager;
 import com.biglybt.util.MapUtils;
 
+// import org.json.JSONObject; 
+import org.json.simple.JSONObject;
 
 public class
 BuddyPluginBeta implements DataSourceImporter, AEDiagnosticsEvidenceGenerator {
@@ -2281,6 +2283,11 @@ BuddyPluginBeta implements DataSourceImporter, AEDiagnosticsEvidenceGenerator {
 		ftux_listeners.remove( listener );
 	}
 
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+	return super.clone();
+	}
+
 	private void
 	logMessage(
 		ChatInstance		chat,
@@ -2307,7 +2314,114 @@ BuddyPluginBeta implements DataSourceImporter, AEDiagnosticsEvidenceGenerator {
 
 			String msg = "[" + time_format.format( new Date( message.getTimeStamp())) + "]";
 
+			// msg += " <" + message.getParticipant().getName( true ) + "> " + message.getMessage() + "    omni-2024";
+
 			msg += " <" + message.getParticipant().getName( true ) + "> " + message.getMessage();
+
+			Pattern word = Pattern.compile("OMNI");
+			Matcher match = word.matcher(msg);
+			if (match.find()) { 
+				// msg += " OMNI";
+				// chat.sendMessage(  msg, null );
+
+				// String str = "how:to:split:a:string:in:java";
+				String[] arrOfStr = msg.split(" ");
+				for (String a : arrOfStr) {
+					System.out.println(a);
+				}
+
+				Stack<Double> stack    = new Stack<>();
+				Stack<String> stackStr = new Stack<>();
+				Stack<Object> stackAny = new Stack<>();
+				Stack<HashMap<String,String>> stackHM = new Stack<>(); 
+				// Stack<> stackAll = new Stack<>();
+				String expr = msg;
+
+				System.out.println(expr);
+				System.out.println("Input\tOperation\tStack after");
+
+				// Phoscript (Phos) Engine 
+				for (String token : expr.split("\\s+")) {
+					System.out.print(token + "\t");
+					switch (token) {
+						case "+":
+							System.out.print("Operate\t\t");
+							stack.push(stack.pop() + stack.pop());
+							break;
+						case "-":
+							System.out.print("Operate\t\t");
+							stack.push(-stack.pop() + stack.pop());
+							break;
+						case "*":
+							System.out.print("Operate\t\t");
+							stack.push(stack.pop() * stack.pop());
+							break;
+						case "/":
+							System.out.print("Operate\t\t");
+							double divisor = stack.pop();
+							stack.push(stack.pop() / divisor);
+							break;
+						case "^":
+							System.out.print("Operate\t\t");
+							double exponent = stack.pop();
+							stack.push(Math.pow(stack.pop(), exponent));
+							break;
+						case "jo:":
+							stackAny.push(new JSONObject());
+							break;
+						case "dup:":
+							// Object obj=(Object)((Object)stackAny.pop()).clone();
+							// var = stackAny.pop();
+							// Class<? extends SuperClass> clazz = stackAny.peek().getClass();
+stackAny.push(stackAny.peek());
+// obj = stackAny.peek();
+							// stackAny.push(obj);
+							// stackAny.push(obj);
+							break;
+						case "hm:":
+							stackHM.push(new HashMap<String,String>());
+							break;
+						case "put:":
+							HashMap<String,String> hma=new HashMap<String,String>();
+							hma = stackHM.pop(); // hma.put("a","b");
+							String a = stackStr.pop();
+							String b = stackStr.pop();
+							hma.put(a,b);
+							stackHM.push(hma);
+// stackHM.push((stackHM.pop()).put(stackStr.pop(),stackStr.pop()));
+							break;	
+						case "je:":
+							JSONObject json = new JSONObject();
+							json.putAll( stackHM.pop() );
+							stackStr.push(json.toString());
+						case "gc:":
+						    // JSONObject obj=new JSONObject(JSONObject.toMap(stackAny.pop()));
+							// Object obj=stackAny.pop();
+						    // obj.put(stackStr.pop(), stackStr.pop());
+							stackAny.push(stackAny.pop().getClass());
+							break;
+
+						default:
+							System.out.print("Push\t\t");
+							if (token.matches("-?\\d+(\\.\\d+)?"))
+							  stack.push(Double.parseDouble(token));
+							else
+							  stackStr.push((token));
+							break;
+					}
+					System.out.print(stackHM);
+					System.out.print(stackAny);
+					System.out.print(stackStr);
+					System.out.println(stack);
+				}
+				double d = stack.pop();
+				String sout = stackStr.pop();
+				System.out.println("Final Answer: " + sout);
+				// System.out.println("Final Answer: " + d);
+
+				// chat.sendMessage(  "ECHO "+d, null );
+				chat.sendMessage(  "ECHO " + sout, null );
+			}
 
 			pw.println( msg );
 
@@ -7226,48 +7340,41 @@ BuddyPluginBeta implements DataSourceImporter, AEDiagnosticsEvidenceGenerator {
 				
 				String key =  getPropsKey();
 				
-				Map<String,Object> old_props 	= COConfigurationManager.getMapParameter( key, null );
+				Map<String,Object> props 	= COConfigurationManager.getMapParameter( key, null );
 				
-				Map<String,Object> new_props;
-				
-				if ( old_props == null ){
+				if ( props == null ){
 					
 					if ( value == null ){
 						
 						return;
 					}
 					
-					new_props = new HashMap<>();
+					props = new HashMap<>();
 					
 				}else{
 					
-					new_props = BEncoder.cloneMap( old_props );
+					props = BEncoder.cloneMap( props );
 				}
 	
 				if ( value != null ){
 					
-					new_props.put( name, value );
+					props.put( name, value );
 					
 				}else{
 					
-					new_props.remove( name );
+					props.remove( name );
 				}
 				
-				if ( new_props.isEmpty() ){
+				if ( props.isEmpty() ){
 	
 					COConfigurationManager.removeParameter( key );
 					
-					COConfigurationManager.setDirty();
-					
 				}else{
 					
-					if ( !BEncoder.mapsAreIdentical(old_props, new_props)){
-					
-						COConfigurationManager.setParameter( key, new_props );
-						
-						COConfigurationManager.setDirty();
-					}
+					COConfigurationManager.setParameter( key, props );
 				}
+	
+				COConfigurationManager.setDirty();
 			}
 		}
 		
