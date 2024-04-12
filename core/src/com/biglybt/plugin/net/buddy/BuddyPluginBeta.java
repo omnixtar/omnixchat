@@ -2394,6 +2394,10 @@ stackAny.push(stackAny.peek());
 							JSONObject json = new JSONObject();
 							json.putAll( stackHM.pop() );
 							stackStr.push(json.toString());
+							break;	
+						case "d2s:": // pop Double to String Stack<>
+							stackStr.push(Double.toString(stack.pop()));
+							break;	
 						case "gc:":
 						    // JSONObject obj=new JSONObject(JSONObject.toMap(stackAny.pop()));
 							// Object obj=stackAny.pop();
@@ -2414,7 +2418,9 @@ stackAny.push(stackAny.peek());
 					System.out.print(stackStr);
 					System.out.println(stack);
 				}
-				double d = stack.pop();
+				// double d = stack.pop();
+				System.out.print(stackStr.peek().equals("OMNI")+" TOS ");
+				if (stackStr.peek().equals("OMNI")) stackStr.pop();
 				String sout = stackStr.pop();
 				System.out.println("Final Answer: " + sout);
 				// System.out.println("Final Answer: " + d);
